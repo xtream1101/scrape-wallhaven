@@ -138,7 +138,11 @@ class Wallhaven(CustomUtils):
         prop['rel_path'] = prop['save_path'].replace(self._base_dir, "")
 
         date_added = prop['Added'][:19]  # we can remove '+00:00'
-        prop['Added'] = datetime.strptime(date_added, "%Y-%m-%dT%H:%M:%S").strftime('%s')
+
+        prop['Added'] = int((datetime.strptime(date_added, "%Y-%m-%dT%H:%M:%S") -
+                             datetime(1970, 1, 1))
+                            .total_seconds()
+                            )
 
         if self.download(img_src, prop['save_path'], self._url_header):
             # Save data
