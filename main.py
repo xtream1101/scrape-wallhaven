@@ -208,10 +208,16 @@ class Wallhaven(CustomUtils):
         # Needs to be done after the tags have been commited to database
         #   because of forginkey constraint
         for tag_id in tag_id_list:
-            wallhaven_data_tag = DataTag(tag_id=tag_id,
-                                         data_id=data_id
-                                         )
-            self._db_session.add(wallhaven_data_tag)
+            check_data_tag = self._db_session.query(DataTag).filter(and_(DataTag.tag_id == tag_id,
+                                                                         DataTag.data_id == data_id
+                                                                         )
+                                                                    ).first()
+            if check_data_tag is None:  # If tag does not exist, add it
+                wallhaven_data_tag = DataTag(tag_id=tag_id,
+                                             data_id=data_id
+                                             )
+                self._db_session.add(wallhaven_data_tag)
+
         try:
             self._db_session.commit()
         except sqlalchemy.exc.IntegrityError:
