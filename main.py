@@ -191,11 +191,13 @@ class Wallhaven(CustomUtils):
         tag_id_list = []
         for tag in tags:
             tag_id_list.append(tag['id'])
-            wallhaven_tag = Tag(id=tag['id'],
-                                name=tag['name'],
-                                purity=tag['purity'],
-                                )
-            self._db_session.add(wallhaven_tag)
+            check_tag = self._db_session.query(Tag).filter(Tag.id == tag['id']).first()
+            if check_tag is None:  # If tag does not exist, add it
+                wallhaven_tag = Tag(id=tag['id'],
+                                    name=tag['name'],
+                                    purity=tag['purity'],
+                                    )
+                self._db_session.add(wallhaven_tag)
         try:
             self._db_session.commit()
         except sqlalchemy.exc.IntegrityError:
