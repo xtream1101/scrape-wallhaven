@@ -1,5 +1,6 @@
 import os
 import sys
+import signal
 from datetime import datetime
 from custom_utils.custom_utils import CustomUtils
 from custom_utils.exceptions import *
@@ -158,24 +159,24 @@ class Wallhaven(CustomUtils):
         resolution = data['Resolution'].split('x')
 
         wallhaven_data = Data(id=data['id'],
-                         added=data['Added'],
-                         category=data['Category'],
-                         favorites=data['Favorites'],
-                         source=data['Source'],
-                         user=data['Uploaded by'],
-                         size=data['Size'],
-                         views=data['Views'],
-                         hash=data['hash'],
-                         purity=data['purity'],
-                         rel_path=data['rel_path'],
-                         color_1=data['colors'][0],
-                         color_2=data['colors'][1],
-                         color_3=data['colors'][2],
-                         color_4=data['colors'][3],
-                         color_5=data['colors'][4],
-                         resolution_width=resolution[0].strip(),
-                         resolution_height=resolution[1].strip(),
-                         )
+                              added=data['Added'],
+                              category=data['Category'],
+                              favorites=data['Favorites'],
+                              source=data['Source'],
+                              user=data['Uploaded by'],
+                              size=data['Size'],
+                              views=data['Views'],
+                              hash=data['hash'],
+                              purity=data['purity'],
+                              rel_path=data['rel_path'],
+                              color_1=data['colors'][0],
+                              color_2=data['colors'][1],
+                              color_3=data['colors'][2],
+                              color_4=data['colors'][3],
+                              color_5=data['colors'][4],
+                              resolution_width=resolution[0].strip(),
+                              resolution_height=resolution[1].strip(),
+                              )
         self._db_session.add(wallhaven_data)
         try:
             self._db_session.commit()
@@ -187,7 +188,6 @@ class Wallhaven(CustomUtils):
         self._save_tag_data(data['tags'], data['id'])
 
     def _save_tag_data(self, tags, data_id):
-
         tag_id_list = []
         for tag in tags:
             tag_id_list.append(tag['id'])
@@ -232,33 +232,35 @@ class Wallhaven(CustomUtils):
 
 class Tag(Base):
     __tablename__ = 'tags'
-    id        = Column(Integer, primary_key=True)
-    name      = Column(String(50), nullable=False)
-    purity    = Column(String(20), nullable=False)
+    id     = Column(Integer,    primary_key=True)
+    name   = Column(String(50), nullable=False)
+    purity = Column(String(20), nullable=False)
+
 
 class Data(Base):
     __tablename__ = 'data'
-    id         = Column(Integer,     primary_key=True)
-    added      = Column(Integer,     nullable=False)
-    category   = Column(String(100), nullable=False)
-    favorites  = Column(Integer,     nullable=False)
-    source     = Column(String(120), nullable=False)
-    user       = Column(String(80),  nullable=False)
-    size       = Column(String(20),  nullable=False)
-    views      = Column(Integer,     nullable=False)
-    hash       = Column(String(32),  nullable=False)
-    purity     = Column(String(20),  nullable=False)
-    rel_path   = Column(String(255), nullable=False)
-    color_1    = Column(String(7),   nullable=False)
-    color_2    = Column(String(7),   nullable=False)
-    color_3    = Column(String(7),   nullable=False)
-    color_4    = Column(String(7),   nullable=False)
-    color_5    = Column(String(7),   nullable=False)
+    id        = Column(Integer,     primary_key=True)
+    added     = Column(Integer,     nullable=False)
+    category  = Column(String(100), nullable=False)
+    favorites = Column(Integer,     nullable=False)
+    source    = Column(String(120), nullable=False)
+    user      = Column(String(80),  nullable=False)
+    size      = Column(String(20),  nullable=False)
+    views     = Column(Integer,     nullable=False)
+    hash      = Column(String(32),  nullable=False)
+    purity    = Column(String(20),  nullable=False)
+    rel_path  = Column(String(255), nullable=False)
+    color_1   = Column(String(7),   nullable=False)
+    color_2   = Column(String(7),   nullable=False)
+    color_3   = Column(String(7),   nullable=False)
+    color_4   = Column(String(7),   nullable=False)
+    color_5   = Column(String(7),   nullable=False)
     resolution_width  = Column(Integer, nullable=False)
     resolution_height = Column(Integer, nullable=False)
 
+
 class DataTag(Base):
-    __tablename__  = 'data_tags'
+    __tablename__ = 'data_tags'
     tag_id  = Column(Integer, ForeignKey(Tag.id))
     data_id = Column(Integer, ForeignKey(Data.id))
     __table_args__ = (
@@ -266,7 +268,13 @@ class DataTag(Base):
             )
 
 
+def signal_handler(signal, frame):
+    print("")
+    sys.exit(0)
+
+
 if __name__ == "__main__":
+    signal.signal(signal.SIGINT, signal_handler)
     if len(sys.argv) < 2:
         print("You must pass in the save directory of the scraper")
 
