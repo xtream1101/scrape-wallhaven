@@ -37,8 +37,8 @@ class Wallhaven(CustomUtils):
 
         for i in range(progress + 1, latest + 1):
             self.cprint("Getting wallpaper: " + str(i))
-            self.parse(i)
-            self.sql.update_progress(i)
+            if self.parse(i) is not False:
+                self.sql.update_progress(i)
 
     def get_latest(self):
         """
@@ -72,8 +72,8 @@ class Wallhaven(CustomUtils):
         # get the html from the url
         try:
             soup = self.get_site(url, self._url_header)
-        except RequestsError:
-            # TODO: Do something more useful here i.e. let the user know
+        except RequestsError as e:
+            print("Error getting latest: " + str(e))
             return False
 
         # Find all sidebar data
