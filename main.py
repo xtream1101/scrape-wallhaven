@@ -1,6 +1,8 @@
 import os
 import sys
 import signal
+import argparse
+import configparser
 from datetime import datetime
 from custom_utils.custom_utils import CustomUtils
 from custom_utils.exceptions import *
@@ -301,16 +303,50 @@ def signal_handler(signal, frame):
 
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
-    if len(sys.argv) < 2:
-        print("You must pass in the save directory of the scraper")
+
+    # Deal with args
+    parser = argparse.ArgumentParser(description='Scrape site and archive data')
+    parser.add_argument('-c', '--config', help='Config file')
+    parser.add_argument('-d', '--dir', help='Absolute path to save directory')
+    parser.add_argument('-r', '--restart', help='Set to start parsing at 0', action='store_true')
+    args = parser.parse_args()
+
+    # Set defaults
+    save_dir = None
+    restart = None
+
+    if args.config is not None:
+        # Load config values
+        if not os.path.isfile(args.config):
+            print("No config file found")
+            sys.exit(0)
+
+        config = configparser.ConfigParser()
+        config.read(args.config)
+
+    # Check config file first
+    if 'main' in config:
+        if 'save_dir' in config['main']:
+            save_dir = config['main']['save_dir']
+        if 'restart' in config['main']:
+            if config['main']['restart'].lower() == 'true':
+                restart = True
+            else:
+                restart = False
+
+    # Command line args will overwrite config args
+    if args.dir is not None:
+        save_dir = args.dir
+
+    if restart is None or args.restart is True:
+        restart = args.restart
+
+    # Check to make sure we have our args
+    if args.dir is None and save_dir is None:
+        print("You must supply a config file with `save_dir` or -d")
         sys.exit(0)
 
-    restart = False
-    if len(sys.argv) == 3:
-        if sys.argv[2] == 'restart':
-            restart = True
-
-    save_dir = CustomUtils().create_path(sys.argv[1], is_dir=True)
+    save_dir = CustomUtils().create_path(save_dir, is_dir=True)
     # Start the scraper
     scrape = Wallhaven(save_dir, restart)
 
