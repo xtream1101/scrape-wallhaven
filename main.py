@@ -12,10 +12,13 @@ os.environ['TZ'] = 'UTC'
 
 class Wallhaven(CustomUtils):
 
-    def __init__(self, base_dir, url_header=None):
+    def __init__(self, base_dir, restart=False, url_header=None):
         super().__init__()
         # Make sure base_dir exists and is created
         self._base_dir = base_dir
+
+        # Do we need to restart
+        self._restart = restart
 
         # Set url_header
         self._url_header = self._set_url_header(url_header)
@@ -28,7 +31,11 @@ class Wallhaven(CustomUtils):
 
     def start(self):
         latest = self.get_latest()
-        progress = self.sql.get_progress()
+
+        if self._restart is True:
+            progress = 0
+        else:
+            progress = self.sql.get_progress()
 
         if latest == progress:
             # Nothing new to get
@@ -37,6 +44,11 @@ class Wallhaven(CustomUtils):
 
         for i in range(progress + 1, latest + 1):
             self.cprint("Getting wallpaper: " + str(i))
+            if self._restart is True:
+                check_data = self._db_session.query(Data).filter(Data.id == i).first()
+                if check_data is not None:
+                    continue
+
             if self.parse(i) is not False:
                 self.sql.update_progress(i)
 
@@ -73,7 +85,7 @@ class Wallhaven(CustomUtils):
         try:
             soup = self.get_site(url, self._url_header)
         except RequestsError as e:
-            print("Error getting latest: " + str(e))
+            print("Error getting (" + url + "): " + str(e))
             return False
 
         # Find all sidebar data
@@ -162,35 +174,36 @@ class Wallhaven(CustomUtils):
     def _save_meta_data(self, data):
 
         resolution = data['Resolution'].split('x')
+        check_data = self._db_session.query(Data).filter(Data.id == data['id']).first()
+        if check_data is None:
+            wallhaven_data = Data(id=data['id'],
+                                  added=data['Added'],
+                                  category=data['Category'],
+                                  favorites=data['Favorites'],
+                                  source=data['Source'],
+                                  user=data['Uploaded by'],
+                                  size=data['Size'],
+                                  views=data['Views'],
+                                  hash=data['hash'],
+                                  purity=data['purity'],
+                                  rel_path=data['rel_path'],
+                                  color_1=data['colors'][0],
+                                  color_2=data['colors'][1],
+                                  color_3=data['colors'][2],
+                                  color_4=data['colors'][3],
+                                  color_5=data['colors'][4],
+                                  resolution_width=resolution[0].strip(),
+                                  resolution_height=resolution[1].strip(),
+                                  )
+            self._db_session.add(wallhaven_data)
+            try:
+                self._db_session.commit()
+            except sqlalchemy.exc.IntegrityError:
+                # tried to add an item to the database which was already there
+                pass
 
-        wallhaven_data = Data(id=data['id'],
-                              added=data['Added'],
-                              category=data['Category'],
-                              favorites=data['Favorites'],
-                              source=data['Source'],
-                              user=data['Uploaded by'],
-                              size=data['Size'],
-                              views=data['Views'],
-                              hash=data['hash'],
-                              purity=data['purity'],
-                              rel_path=data['rel_path'],
-                              color_1=data['colors'][0],
-                              color_2=data['colors'][1],
-                              color_3=data['colors'][2],
-                              color_4=data['colors'][3],
-                              color_5=data['colors'][4],
-                              resolution_width=resolution[0].strip(),
-                              resolution_height=resolution[1].strip(),
-                              )
-        self._db_session.add(wallhaven_data)
-        try:
-            self._db_session.commit()
-        except sqlalchemy.exc.IntegrityError:
-            # tried to add an item to the database which was already there
-            pass
-
-        # Save tags in their own table
-        self._save_tag_data(data['tags'], data['id'])
+            # Save tags in their own table
+            self._save_tag_data(data['tags'], data['id'])
 
     def _save_tag_data(self, tags, data_id):
         tag_id_list = []
@@ -290,9 +303,15 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
     if len(sys.argv) < 2:
         print("You must pass in the save directory of the scraper")
+        sys.exit(0)
+
+    restart = False
+    if len(sys.argv) == 3:
+        if sys.argv[2] == 'restart':
+            restart = True
 
     save_dir = CustomUtils().create_path(sys.argv[1], is_dir=True)
     # Start the scraper
-    scrape = Wallhaven(save_dir)
+    scrape = Wallhaven(save_dir, restart)
 
     print("")
