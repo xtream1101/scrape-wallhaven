@@ -14,7 +14,7 @@ os.environ['TZ'] = 'UTC'
 
 class Wallhaven(CustomUtils):
 
-    def __init__(self, base_dir, restart=False, url_header=None):
+    def __init__(self, base_dir, restart=False, proxies=[], url_header=None):
         super().__init__()
         # Make sure base_dir exists and is created
         self._base_dir = base_dir
@@ -24,6 +24,13 @@ class Wallhaven(CustomUtils):
 
         # Set url_header
         self._url_header = self._set_url_header(url_header)
+
+        # If we have proxies then add them
+        if len(proxies) > 0:
+            self.set_proxies(proxies)
+
+        print(self.get_current_proxy())
+        print()
 
         # Setup database
         self._db_setup()
@@ -83,10 +90,16 @@ class Wallhaven(CustomUtils):
         prop['id'] = str(id_)
 
         url = "http://alpha.wallhaven.cc/wallpaper/" + prop['id']
-        # get the html from the url
+        # Get the html from the url
         try:
             soup = self.get_site(url, self._url_header)
         except RequestsError as e:
+            # TODO: If error is a 403 and page has text 'Wallpaper Blocked!'
+            #   That means that it is flagged as NSFW
+            #   if it does not, then most likely our ip got banned
+            # If ip got banned then ask for a new proxy and resend the request
+            #   to change proxies:
+            # self.log("Connected via: " + self.rotate_proxy())
             print("Error getting (" + url + "): " + str(e))
             return False
 
@@ -314,6 +327,7 @@ if __name__ == "__main__":
     # Set defaults
     save_dir = None
     restart = None
+    proxy_list = []
 
     if args.config is not None:
         # Load config values
@@ -334,6 +348,11 @@ if __name__ == "__main__":
             else:
                 restart = False
 
+    # Proxies can only be set via config file
+    if 'proxy' in config:
+        if 'http' in config['proxy']:
+            proxy_list = config['proxy']['http'].split('\n')
+
     # Command line args will overwrite config args
     if args.dir is not None:
         save_dir = args.dir
@@ -347,7 +366,8 @@ if __name__ == "__main__":
         sys.exit(0)
 
     save_dir = CustomUtils().create_path(save_dir, is_dir=True)
+
     # Start the scraper
-    scrape = Wallhaven(save_dir, restart)
+    scrape = Wallhaven(save_dir, restart=restart, proxies=proxy_list)
 
     print("")
