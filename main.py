@@ -23,7 +23,7 @@ class Wallhaven(CustomUtils):
         self._restart = restart
 
         # Set url_header
-        self._url_header = self._set_url_header(url_header)
+        self._url_header = self.set_url_header(url_header)
 
         # If we have proxies then add them
         if len(proxies) > 0:
@@ -180,13 +180,6 @@ class Wallhaven(CustomUtils):
 
         # Everything was successful
         return True
-
-    def _set_url_header(self, url_header):
-        if url_header is None:
-            # Use default from CustomUtils
-            return self.get_default_header()
-        else:
-            return url_header
 
     def _save_meta_data(self, data):
 
