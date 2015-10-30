@@ -340,20 +340,20 @@ if __name__ == "__main__":
         config = configparser.ConfigParser()
         config.read(args.config)
 
-    # Check config file first
-    if 'main' in config:
-        if 'save_dir' in config['main']:
-            save_dir = config['main']['save_dir']
-        if 'restart' in config['main']:
-            if config['main']['restart'].lower() == 'true':
-                restart = True
-            else:
-                restart = False
+        # Check config file first
+        if 'main' in config:
+            if 'save_dir' in config['main']:
+                save_dir = config['main']['save_dir']
+            if 'restart' in config['main']:
+                if config['main']['restart'].lower() == 'true':
+                    restart = True
+                else:
+                    restart = False
 
-    # Proxies can only be set via config file
-    if 'proxy' in config:
-        if 'http' in config['proxy']:
-            proxy_list = config['proxy']['http'].split('\n')
+        # Proxies can only be set via config file
+        if 'proxy' in config:
+            if 'http' in config['proxy']:
+                proxy_list = config['proxy']['http'].split('\n')
 
     # Command line args will overwrite config args
     if args.dir is not None:
