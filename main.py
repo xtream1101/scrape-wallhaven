@@ -28,9 +28,7 @@ class Wallhaven(CustomUtils):
         # If we have proxies then add them
         if len(proxies) > 0:
             self.set_proxies(proxies)
-
-        print(self.get_current_proxy())
-        print()
+            self.log("Using IP: " + self.get_current_proxy())
 
         # Setup database
         self._db_setup()
@@ -92,15 +90,18 @@ class Wallhaven(CustomUtils):
         url = "http://alpha.wallhaven.cc/wallpaper/" + prop['id']
         # Get the html from the url
         try:
-            soup = self.get_site(url, self._url_header)
+            soup = self.get_site(url, self._url_header, return_error_page=True)
         except RequestsError as e:
-            # TODO: If error is a 403 and page has text 'Wallpaper Blocked!'
-            #   That means that it is flagged as NSFW
-            #   if it does not, then most likely our ip got banned
-            # If ip got banned then ask for a new proxy and resend the request
-            #   to change proxies:
-            # self.log("Connected via: " + self.rotate_proxy())
             print("Error getting (" + url + "): " + str(e))
+
+            # If ip got banned, ask for a new proxy and reparse
+            if err.startswith('\'403'):
+                # Means we were not blocked because of NSFW tag, but other reasons
+                if 'Wallpaper Blocked!' not in self.response.text:
+                    self.log("Connect via: " + self.rotate_proxy())
+                    # Now try again
+                    return self.parse(id_)
+
             return False
 
         # Find all sidebar data
