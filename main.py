@@ -92,7 +92,8 @@ class Wallhaven(CustomUtils):
         try:
             soup = self.get_site(url, self._url_header, return_error_page=True)
         except RequestsError as e:
-            print("Error getting (" + url + "): " + str(e))
+            err = str(e)
+            print("Error getting (" + url + "): " + err)
 
             # If ip got banned, ask for a new proxy and reparse
             if err.startswith('\'403'):
