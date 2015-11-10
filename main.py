@@ -111,22 +111,30 @@ class Wallhaven(CustomUtils):
         #####
         # Get colors
         #####
-        prop['colors'] = []
-        wp_colors = sidebar.find("ul", {"class": "color-palette"})
-        for li in wp_colors.find_all("li"):
-            prop['colors'].append(li['style'].split(':')[1])
+        prop['colors'] = ['#', '#', '#', '#', '#']
+        try:
+            wp_colors = sidebar.find("ul", {"class": "color-palette"})
+            for li in wp_colors.find_all("li"):
+                prop['colors'].append(li['style'].split(':')[1])
+        except IndexError:
+            # Color codes are missing
+            pass
 
         #####
         # Get tags
         #####
-        prop['tags'] = []
-        wp_tags = sidebar.find("ul", {"id": "tags"})
-        for li in wp_tags.find_all('li'):
-            tag = {}
-            tag['purity'] = li.get("class", [])[1]
-            tag['id'] = li['data-tag-id']
-            tag['name'] = li.find("a", {"class": "tagname"}).getText().strip()
-            prop['tags'].append(tag)
+        try:
+            prop['tags'] = []
+            wp_tags = sidebar.find("ul", {"id": "tags"})
+            for li in wp_tags.find_all('li'):
+                tag = {}
+                tag['purity'] = li.get("class", [])[1]
+                tag['id'] = li['data-tag-id']
+                tag['name'] = li.find("a", {"class": "tagname"}).getText().strip()
+                prop['tags'].append(tag)
+        except IndexError:
+            # Tags are missing
+            pass
 
         #####
         # Get purity
